@@ -36,7 +36,8 @@ char* jcharToWindows( JNIEnv *env, jcharArray jstr);//声明函数
 char* jcharToWindows_change( JNIEnv *env, jchar jcstr );//声明函数
 
 jcharArray WindowsTojchar( JNIEnv *env, char* str,int len);//声明函数
-jcharArray c2js(JNIEnv* env, const char* pat);//声明函数
+jcharArray c2js(JNIEnv* env, const char* pat);//声明函数    
+jcharArray c2js2(JNIEnv* env, const char* pat);//声明函数
 
 wchar_t * UTF8ToUnicode( const char* str);    //声明函数
 
@@ -74,9 +75,12 @@ JNIEXPORT jcharArray JNICALL Java_MaQiao_MaQiaoJNI_MQJNIArrayChar_coupling___3C
         count++;
     }
     //计算出总数
-    cout<<"->count:"<<count<<endl;
-   char* newArray= (char*)malloc(count + 1);
+    cout<<"->count:"<<count<<endl;  
+   char* newArray= (char*)malloc(count*sizeof(char) + 1);
+   //char* newArray2= new char[count];
+   //char** newArray3= (char**)malloc(count);
    int p=0;
+   int point=0;
    for (i = 0; i < len; i++, repeats = 0) {
     	for (ii = 0; ii < i; ii++)
     	if (char_arr[i] == char_arr[ii])
@@ -86,7 +90,9 @@ JNIEXPORT jcharArray JNICALL Java_MaQiao_MaQiaoJNI_MQJNIArrayChar_coupling___3C
                 cout<<"->aa:"<<charArray[i]<<endl;
                 cout<<"->bb:"<<jcharToWindows(env,charArray[i])<<endl;
                 cout<<"->cc:"<<(char)jcharToWindows(env,charArray[i])<<endl;
-                newArray[p++]=charArray[i];
+                newArray[p++]=charArray[i];//(char)jcharToWindows(env,charArray[i]);//charArray[i];
+                //newArray3[point++]=jcharToWindows(env,charArray[i]);
+                //newArray2[point++]=(char)jcharToWindows(env,charArray[i]);//char_arr[i];
                 //widebuff[p++]=charArray[i];
                 }
         //(*newArray)[p++] =(char *)jcharToWindows(env,char_arr[i]);
@@ -99,7 +105,10 @@ JNIEXPORT jcharArray JNICALL Java_MaQiao_MaQiaoJNI_MQJNIArrayChar_coupling___3C
   // for(i=0;i<=count;i++){
     //cout<<"->newArray["<<i<<"]:"<<newArray[i]<<endl;
   // }
-   cout<<"newArray[jcharToWindows(env,array)]:"<<newArray<<endl;
+   cout<<"newArray[jcharToWindows(env,array)]:"<<newArray<<endl; 
+   cout<<"->--2--[strlen(pat)]:"<<(count*sizeof(char) + 1)<<endl;
+   cout<<"->--2--[strlen(pat)]:"<<sizeof(newArray)<<endl;
+   cout<<"->--2--[strlen(pat)]:"<<strlen(newArray)<<endl;
    /*
    结束计算
    */
@@ -203,13 +212,73 @@ jcharArray WindowsTojchar( JNIEnv *env, char* str,int len)
         }
  jcharArray c2js(JNIEnv* env, const char* pat)
 {
-   jclass clsstring = env->FindClass("MaQiao/MaQiaoJNI/JNIChar");   
+   jclass clsstring = env->FindClass("MaQiao/MaQiaoJNI/JNIChar");
    jmethodID mid = env->GetStaticMethodID(clsstring, "getChar", "([B)[C");
-   jcharArray chars = env->NewCharArray(strlen(pat));  
+   cout<<"->----[strlen(pat)]:"<<sizeof(pat)<<endl;
+   jcharArray chars = env->NewCharArray(strlen(pat));
    env->SetCharArrayRegion(chars, 0, strlen(pat), (jchar*)pat);    
    jstring encoding = env->NewStringUTF("utf-8");  
    return (jcharArray)env->NewObject(clsstring, mid, chars, encoding);  
 }
+ jcharArray c2js2(JNIEnv* env, const char* pat)
+{   
+   jcharArray chars = env->NewCharArray(strlen(pat));  
+   env->SetCharArrayRegion(chars, 0, strlen(pat), (jchar*)pat);    
+   //jstring encoding = env->NewStringUTF("utf-8");  
+   return chars;//(jcharArray)env->NewObject(clsstring, mid, chars, encoding);  
+}
+
+ jcharArray c2jsArrays(JNIEnv* env, const char* pat)
+{
+        int len=sizeof(pat);
+        jcharArray chars = 0;
+        if(len==0)return chars;
+        BYTE *pbytes = (BYTE*) pat;
+        //nOutSize是BYTE数组的长度 BYTE pData[]
+        jsize nOutSize = (jsize)len;
+        //int nOutSize=((strlen(pbytes)-1) / sizeof(BYTE));
+        jbyte *jbytes = (jbyte*)pbytes;
+        jbyteArray jarray = env->NewByteArray(nOutSize);
+        env->SetByteArrayRegin(jarray,jbytes, 0, nOutSize, NULL);
+
+
+   
+   return chars;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
