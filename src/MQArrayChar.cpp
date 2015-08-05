@@ -38,7 +38,7 @@ JNIEXPORT jcharArray JNICALL Java_MaQiao_MaQiaoJNI_MQJNIArrayChar_coupling___3C
    jchar* char_arr=env->GetCharArrayElements(array,0);
    //int len = (int)arraylen;
    //wchar_t *widebuff=new wchar_t[len];
-   char* charArray= Java2C::jcharArraychar2char(env,array);
+   char* charArray= Java2C::jcharArraychar2char(env,&array);
    cout<<"charArray[jcharToWindows(env,array)]:"<<charArray<<endl;
    /*
    开始计算
@@ -90,13 +90,23 @@ JNIEXPORT jcharArray JNICALL Java_MaQiao_MaQiaoJNI_MQJNIArrayChar_coupling___3C
    delete[] char_arr; //释放数组空间
    env->DeleteLocalRef(array);
    jcharArray jchararray = C2Java::chars2jcharArray(env,newArray,&count);
+   //尝试得到二级指针的长度[失败]
+   //jcharArray jchararray = C2Java::chars2jcharArray(env,newArray);
+   free(newArray); //释放二级指针空间
    return jchararray;
 }
 JNIEXPORT jcharArray JNICALL Java_MaQiao_MaQiaoJNI_MQJNIArrayChar_coupling__Ljava_lang_String_2
   (JNIEnv* env, jclass c, jstring str){
         //char* chara=jstringToWindows(env,str);
         //cout<<chara<<endl;
-         jcharArray jchararray;
-         return      jchararray;
+        //char * chars = Java2C::jstringTochar(env,str);
+        //int len = strlen(chars);
+        //cout<<"str:"<<str<<endl;
+        //cout<<"chars:"<<chars<<endl;
+        //cout<<"len:"<<len<<endl;
+        //for(int i=0;i<len;i++)
+        //cout<<"chars["<<i<<"]:"<<chars[i]<<endl;
+        jcharArray jchararray = Java2Java::jstringTojcharArray(env,&str);
+        return jchararray;
 }
 

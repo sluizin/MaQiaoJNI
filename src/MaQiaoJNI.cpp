@@ -15,9 +15,10 @@ using namespace std;
 ===============================================================================
 */
 /*
-     把 jcharArray 转成 char*
+     把 jcharArray 转成 char* [已经成功测试]
+     通过调用Java中的某个方法把 jcharArray 转成  jbyte 再通过动态分配内存转成 char*
 */
-char* Java2C::jcharArraychar2char(JNIEnv *env, jcharArray jstr)
+char* Java2C::jcharArraychar2char(JNIEnv *env, jcharArray *jstr)
 {
         char* rtn = NULL;
         jmethodID mid;
@@ -27,7 +28,7 @@ char* Java2C::jcharArraychar2char(JNIEnv *env, jcharArray jstr)
         if(clsstring)
         mid = env->GetStaticMethodID(clsstring, "getBytes", "([C)[B");
         if(mid)
-        barr= (jbyteArray)env->CallStaticObjectMethod(clsstring, mid,jstr,strencode);
+        barr= (jbyteArray)env->CallStaticObjectMethod(clsstring, mid,*jstr,strencode);
         else
         barr = (jbyteArray)env->NewStringUTF((const char*)NULL);
         jsize alen = env->GetArrayLength(barr);
@@ -39,6 +40,12 @@ char* Java2C::jcharArraychar2char(JNIEnv *env, jcharArray jstr)
                 rtn[alen] = 0;
         }
         env->ReleaseByteArrayElements(barr, ba, 0);
+        //是否要释放资源
+        free(barr);    
+        free(clsstring);
+        free(mid);
+        free(strencode); 
+        free(ba);
         return rtn;
 };
 /*
@@ -70,6 +77,7 @@ char* Java2C::jcharTochar(JNIEnv *env, jchar jstr)
 }
 /*
      把 jstring 转成 char*
+     会遇到Unicode编码问题(一个中文占3个字节)
 */
 char* Java2C::jstringTochar(JNIEnv *env, jstring jstr)
 {
@@ -89,7 +97,19 @@ char* Java2C::jstringTochar(JNIEnv *env, jstring jstr)
         env->ReleaseByteArrayElements(barr, ba, 0);
         return rtn;
 }
-
+/*
+        得到某个String的长度，使用java/lang/String的length()方法  [已经成功测试]
+*/
+int Java2C::jstringLen(JNIEnv *env, jstring *jstr)
+{
+        
+        jclass clsstring = env->FindClass("java/lang/String");
+        jmethodID mid = env->GetMethodID(clsstring, "length", "()I");
+        int len=(int)env->CallIntMethod(*jstr,mid);
+        free(mid);
+        free(clsstring);
+        return len;
+}
 
 
 
@@ -124,6 +144,22 @@ jcharArray C2Java::chars2jcharArray(JNIEnv* env,char** newArray,const int* len)
         if(*len==0)return env->NewCharArray(0);
         jcharArray charArray = env->NewCharArray(*len);
         for(int i=0;i<*len;i++)
+           env->SetCharArrayRegion(charArray,i,1,(jchar*)newArray[i]);
+        return charArray;
+}
+/*
+        把 char** 转成 jcharArray(尝试读取二级指针的长度)[失败]
+*/
+jcharArray C2Java::chars2jcharArray(JNIEnv* env,char** newArray)
+{
+        
+        //int len=sizeof(newArray);
+        char *k= *newArray;
+        int len=strlen(k);
+        cout<<"->len:"<<len<<endl;
+        if(len==0)return env->NewCharArray(0);
+        jcharArray charArray = env->NewCharArray(len);
+        for(int i=0;i<len;i++)
            env->SetCharArrayRegion(charArray,(jsize)i,(jsize)1,(jchar*)newArray[i]);
         return charArray;
 }
@@ -165,4 +201,60 @@ jbyte C2Java::char2jbyte(JNIEnv* env,const char* c)
         ch=(jbyte)lpBuffer;
         return ch;
 }
+jstring  C2Java::CharTojstring(JNIEnv* env,char* str)
+{
+	jsize   len   =   strlen(str);
+	jclass   clsstring   =   env->FindClass("java/lang/String");
+	jstring   strencode   =   env->NewStringUTF("utf-8");
+	jmethodID   mid   =   env->GetMethodID(clsstring,   "<init>",   "([BLjava/lang/String;)V");
+	jbyteArray   barr   =   env-> NewByteArray(len);
+
+	env-> SetByteArrayRegion(barr,0,len,(jbyte*)str);
+	return (jstring)env-> NewObject(clsstring,mid,barr,strencode);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+===============================================================================
+
+                        Java2Java
+
+===============================================================================
+*/
+
+
+/*
+     把 jstring 转成 jcharArray    [已经成功测试]
+     注意：如果直接按byte提出String，则会遇到Unicode编码问题
+     所以使用String.charAt()方法一个一个提出char，保存在jcharArray中
+*/
+jcharArray Java2Java::jstringTojcharArray(JNIEnv *env, jstring *jstr)
+{                                                          
+        jclass clsstring = env->FindClass("java/lang/String");
+        jmethodID mid = env->GetMethodID(clsstring, "charAt", "(I)C");
+        const int len=Java2C::jstringLen(env,jstr);   
+        jcharArray charArray = env->NewCharArray(len);
+        for(int i=0;i<len;i++){
+                jchar c=env->CallCharMethod(*jstr,mid,i);
+                env->SetCharArrayRegion(charArray,(jsize)i,(jsize)1,&c);
+        }
+        free(mid);
+        free(clsstring);
+        //cout<<"1jstr:"<<jstr<<endl;
+        //cout<<"1charArray:"<<charArray<<endl;
+        //cout<<"1len:"<<len<<endl;
+        return charArray;
+}
+
 
